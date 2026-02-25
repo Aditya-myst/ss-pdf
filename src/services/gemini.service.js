@@ -1,6 +1,6 @@
 import {GoogleGenerativeAI} from "@google/generative-ai";
-import { imageToBase64 } from "../utils/imageToBase64";
-import { analyzePrompt } from "../prompts/analyze.prompt";
+import { imageToBase64 } from "../utils/imageToBase64.js";
+import { analyzePrompt } from "../prompts/analyze.prompt.js";
 import dotenv from "dotenv"
 
 dotenv.config();
@@ -49,34 +49,29 @@ export async function analyzeScreenshot(filepath){
 
 }
 
-function parseGeminiResponse(rawResponse){
-    try{
-        let cleaned = rawResponse.trim();
-        if( cleaned.startsWith("```json")){
-            cleaned = cleaned.slice(7);
-        }
-        if( cleaned = startsWith("```")){
-            cleaned = cleaned.slice(3);
-        }
-        if(cleaned = endswith("```")){
-            cleaned= cleaned.slice(0,-3);
-        }
+function parseGeminiResponse(rawResponse) {
+  try {
+    let cleaned = rawResponse.trim();
 
-        const parsed = JSON.parses(cleaned.trim());
+    // Remove markdown code blocks if present
+    cleaned = cleaned.replace(/^```json\s*/i, "");
+    cleaned = cleaned.replace(/^```\s*/i, "");
+    cleaned = cleaned.replace(/```\s*$/i, "");
 
-        console.log(`📊 Screenshot type detected: ${parsed.screenshotType}`);
-        console.log(`🎯 Confidence: ${parsed.confidence}`);
+    const parsed = JSON.parse(cleaned.trim());
 
-        return parsed;
-    }
-     catch(parseError){
-        console.log("⚠️ Failed to parse Gemini response as JSON");
-        console.error("Raw response was:", rawResponse);
-         return {
+    console.log(`📊 Screenshot type detected: ${parsed.screenshotType}`);
+    console.log(`🎯 Confidence: ${parsed.confidence}`);
+
+    return parsed;
+
+  } catch (parseError) {
+    console.error("⚠️ Failed to parse Gemini response as JSON");
+    return {
       screenshotType: "unknown",
       title: "Analysis Incomplete",
       summary: "The AI response could not be parsed correctly.",
-      description: rawResponse, // preserve raw response for debugging
+      description: rawResponse,
       keyInsights: [],
       trendAnalysis: null,
       errorExplanation: null,
@@ -84,6 +79,5 @@ function parseGeminiResponse(rawResponse){
       metrics: { extracted: null },
       confidence: "low",
     };
-    }
+  }
 }
-
